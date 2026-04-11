@@ -6,10 +6,10 @@ A full-stack IoT-powered cold chain monitoring system that tracks temperature-se
 
 | Layer | Technology |
 |-------|-----------|
-| **Backend** | Spring Boot 3.4, Java 17, MySQL, Hibernate |
-| **Frontend** | React 18, Vite, Vanilla CSS |
+| **Backend** | Spring Boot 3.4, Java 17, MySQL,Hibernate |
+| **Frontend** | React 18, Vite,CSS |
 | **Email** | Spring Mail (Gmail SMTP) |
-| **API Docs** | Swagger / SpringDoc OpenAPI |
+| **API Docs** | Swagger |
 
 ## 📁 Project Structure
 
@@ -94,6 +94,5 @@ Frontend runs on **http://localhost:5173**
 
 The app uses MySQL with `spring.jpa.hibernate.ddl-auto=update`, so tables are auto-created on first run. Database name: `coldchain_db`
 
-## 👥 Team
 
 Built for Hackathon 2026

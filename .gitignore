@@ -1,0 +1,23 @@
+# Backend
+coldchain-backend/target/
+coldchain-backend/.mvn/
+coldchain-backend/*.iml
+
+# Frontend
+coldchain-frontend/node_modules/
+coldchain-frontend/dist/
+coldchain-frontend/dist-ssr/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# Misc
+*.zip
+*.log

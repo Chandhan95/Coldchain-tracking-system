@@ -36,7 +36,7 @@ Coldchain-tracking-system/
 - **Shipment Lifecycle** — Full flow: Created → In Transit → Arrived → Delivered, with cascading cleanup on delete
 - **Role-Based Access** — Admin, Logistics Manager, and Driver roles
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 

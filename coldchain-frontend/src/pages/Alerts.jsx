@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api';
 
 const Alerts = ({ user }) => {
   const [alerts, setAlerts] = useState([]);
@@ -10,7 +11,7 @@ const Alerts = ({ user }) => {
 
   const fetchAlerts = async () => {
     try {
-      const res = await fetch('http://localhost:8082/api/alerts/open');
+      const res = await apiFetch('/api/alerts/open');
       if (res.ok) {
         setAlerts(await res.json());
       }
@@ -21,11 +22,10 @@ const Alerts = ({ user }) => {
 
   const handleAction = async (id, action) => {
     try {
-      const endpoint = action === 'acknowledge' 
-        ? `http://localhost:8082/api/alerts/${id}/acknowledge?userId=${user.id}`
-        : `http://localhost:8082/api/alerts/${id}/resolve`;
-
-      const res = await fetch(endpoint, { method: 'PUT' });
+      const endpoint = action === 'acknowledge'
+        ? `/api/alerts/${id}/acknowledge?userId=${user.id}`
+        : `/api/alerts/${id}/resolve`;
+      const res = await apiFetch(endpoint, { method: 'PUT' });
       if (res.ok) {
          fetchAlerts(); // refresh
       } else {

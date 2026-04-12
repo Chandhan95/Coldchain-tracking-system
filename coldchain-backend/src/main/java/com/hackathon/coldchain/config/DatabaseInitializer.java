@@ -1,5 +1,4 @@
 package com.hackathon.coldchain.config;
-
 import com.hackathon.coldchain.entity.User;
 import com.hackathon.coldchain.entity.UserRole;
 import com.hackathon.coldchain.entity.ProductTemperatureRule;
@@ -13,26 +12,38 @@ import com.hackathon.coldchain.entity.AssetStatus;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import java.util.List;
 @Configuration
 public class DatabaseInitializer {
 
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    public DatabaseInitializer(BCryptPasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
     @Bean
     CommandLineRunner initDatabase(UserRepository userRepository, ProductTemperatureRuleRepository ruleRepository, ColdChainAssetRepository assetRepository) {
         return args -> {
-            // Create default admin ONLY if users table is empty
             if (userRepository.count() == 0) {
                 User admin = new User();
                 admin.setName("Super Admin");
                 admin.setUsername("admin");
-                admin.setPassword("admin123");
+                admin.setPassword(passwordEncoder.encode("admin123"));
                 admin.setRole(UserRole.ADMIN);
-                admin.setEmail("admin@coldchain.com");
+                admin.setEmail("saichandhan_ganji@srmap.edu.in");
                 userRepository.save(admin);
                 System.out.println("No users found. Created default ADMIN user: admin / admin123");
+            } else {
+                List<User> existingUsers = userRepository.findAll();
+                for (User u : existingUsers) {
+                    if (u.getPassword() != null && !u.getPassword().startsWith("$2a$")) {
+                        u.setPassword(passwordEncoder.encode(u.getPassword()));
+                        userRepository.save(u);
+                        System.out.println("Migrated password to BCrypt for user: " + u.getUsername());
+                    }
+                }
             }
-
-            // Create rules if empty
             if (ruleRepository.count() == 0) {
                 System.out.println("Initializing Product Temperature Rules...");
                 createRule(ruleRepository, ProductType.VACCINE, 2.0, 8.0);
@@ -41,8 +52,6 @@ public class DatabaseInitializer {
                 createRule(ruleRepository, ProductType.CHEMICAL, 15.0, 25.0);
                 createRule(ruleRepository, ProductType.BLOOD_PRODUCT, 1.0, 6.0);
             }
-
-            // Create default assets if empty so shipments can actually be assigned
             if (assetRepository.count() == 0) {
                 System.out.println("Initializing Cold Chain Assets...");
                 createAsset(assetRepository, "TRUCK-001", AssetType.REFRIGERATED_VAN, 4.0);

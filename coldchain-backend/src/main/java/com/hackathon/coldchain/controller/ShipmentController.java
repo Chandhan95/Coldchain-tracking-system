@@ -6,7 +6,10 @@ import com.hackathon.coldchain.service.ShipmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/shipments")
@@ -20,8 +23,12 @@ public class ShipmentController {
     }
 
     @PostMapping
-    public ResponseEntity<Shipment> createShipment(@RequestBody Shipment shipment, @RequestParam(required = false) Long creatorId) {
-        return ResponseEntity.ok(shipmentService.createShipment(shipment, creatorId));
+    public ResponseEntity<?> createShipment(@RequestBody Shipment shipment, @RequestParam(required = false) Long creatorId) {
+        try {
+            return ResponseEntity.ok(shipmentService.createShipment(shipment, creatorId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping
@@ -57,6 +64,34 @@ public class ShipmentController {
     @PutMapping("/{id}/deliver")
     public ResponseEntity<Shipment> deliverShipment(@PathVariable Long id) {
         return ResponseEntity.ok(shipmentService.deliverShipment(id));
+    }
+
+    @GetMapping("/revenue")
+    public ResponseEntity<Map<String, Object>> getDeliveredRevenue() {
+        List<Shipment> delivered = shipmentService.getDeliveredShipments();
+        BigDecimal total = delivered.stream()
+                .filter(s -> s.getPrice() != null)
+                .map(Shipment::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("totalRevenue", total);
+        response.put("deliveredShipments", delivered);
+        response.put("deliveredCount", delivered.size());
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelShipment(@PathVariable Long id) {
+        try {
+            shipmentService.cancelShipment(id);
+            return ResponseEntity.ok("Shipment cancelled successfully.");
+        } catch (Exception e) {
+            System.err.println("[CANCEL ERROR] shipment " + id + ": " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            String msg = e.getMessage();
+            if (msg == null || msg.contains("org.") || msg.contains("com.")) msg = "Cancel failed. Please try again.";
+            return ResponseEntity.badRequest().body(msg);
+        }
     }
 
     @DeleteMapping("/{id}")

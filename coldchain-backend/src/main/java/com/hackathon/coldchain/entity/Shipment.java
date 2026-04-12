@@ -3,6 +3,7 @@ package com.hackathon.coldchain.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -46,5 +47,8 @@ public class Shipment {
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime expectedDeliveryDate;
     private LocalDateTime actualDeliveryDate;
+
+    // Pricing: set at shipment creation by ADMIN or LOGISTICS_MANAGER
+    private BigDecimal price;
 }
 

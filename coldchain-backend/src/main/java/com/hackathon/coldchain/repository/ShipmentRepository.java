@@ -12,4 +12,5 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
     // Fetches shipment with its latest active excursion alert (if any)
     @Query("SELECT s FROM Shipment s LEFT JOIN FETCH ExcursionAlert e ON e.shipment = s WHERE s.id = :id AND (e IS NULL OR e.resolutionStatus = 'OPEN')")
     Optional<Shipment> findShipmentWithActiveAlerts(@Param("id") Long id);
+    boolean existsByShipmentNumber(String shipmentNumber);
 }

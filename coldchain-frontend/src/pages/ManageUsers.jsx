@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../api';
+
+const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const isAlphanumeric = (v) => /^[A-Za-z0-9_]+$/.test(v);
 
 const ManageUsers = ({ user }) => {
   const [users, setUsers] = useState([]);
@@ -9,7 +13,9 @@ const ManageUsers = ({ user }) => {
     email: '',
     role: 'DRIVER'
   });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -17,69 +23,123 @@ const ManageUsers = ({ user }) => {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:8082/api/users');
-      if (res.ok) {
-        setUsers(await res.json());
-      }
+      const res = await apiFetch('/api/users');
+      if (res.ok) setUsers(await res.json());
     } catch(err) {
-       console.error("Failed to fetch users");
+      console.error('Failed to fetch users');
     }
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: '' }));
+    setSuccessMsg('');
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!formData.name.trim() || formData.name.trim().length < 2)
+      errs.name = 'Full name must be at least 2 characters.';
+    if (!isValidEmail(formData.email))
+      errs.email = 'Please enter a valid email address.';
+    if (!formData.username.trim() || formData.username.trim().length < 3)
+      errs.username = 'Username must be at least 3 characters.';
+    else if (!isAlphanumeric(formData.username.trim()))
+      errs.username = 'Only letters, numbers, and underscores allowed.';
+    if (!formData.password || formData.password.length < 6)
+      errs.password = 'Password must be at least 6 characters.';
+    return errs;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+
     setLoading(true);
-    
+    setSuccessMsg('');
     try {
-      const res = await fetch('http://localhost:8082/api/users', {
+      const res = await apiFetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          username: formData.username.trim(),
+          password: formData.password,
+          role: formData.role
+        })
       });
-      
+
       if (res.ok) {
-        alert("User created successfully!");
+        setSuccessMsg('✅ User created successfully!');
         setFormData({ name: '', username: '', password: '', email: '', role: 'DRIVER' });
+        setErrors({});
         fetchUsers();
       } else {
         const text = await res.text();
-        alert("Failed to create user: " + text);
+        setErrors({ submit: 'Failed to create user: ' + text });
       }
-    } catch(err) {
-      alert("Error creating user");
+    } catch {
+      setErrors({ submit: 'Error connecting to server.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   if (user?.role !== 'ADMIN') {
-    return <div className="container mt-4 text-center"><h2>Access Denied</h2><p>Only Admins can view this page.</p></div>;
+    return (
+      <div className="card" style={{ maxWidth: '500px', margin: '3rem auto', textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--danger)' }}>Access Denied</h2>
+        <p className="text-muted">Only Admins can view this page.</p>
+      </div>
+    );
   }
+
+  /* Shared error component */
+  const FE = ({ msg }) => msg
+    ? <p style={{ color: 'var(--danger)', fontSize: '0.78rem', marginTop: '4px', marginBottom: 0 }}>{msg}</p>
+    : null;
 
   return (
     <div className="grid grid-cols-2">
+      <style>{`.form-control.err { border-color: var(--danger) !important; }`}</style>
       <div className="card">
         <h2 className="mb-4">Create New User</h2>
-        <form onSubmit={handleSubmit}>
+
+        {errors.submit  && <div className="badge badge-danger mb-4" style={{ display:'block', padding:'0.5rem', whiteSpace:'normal' }}>{errors.submit}</div>}
+        {successMsg     && <div className="badge badge-success mb-4" style={{ display:'block', padding:'0.5rem', whiteSpace:'normal' }}>{successMsg}</div>}
+
+        <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
-            <label className="form-label">Full Name</label>
-            <input type="text" className="form-control" name="name" value={formData.name} onChange={handleChange} required />
+            <label className="form-label">Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input type="text" className={`form-control${errors.name ? ' err' : ''}`}
+              name="name" value={formData.name} onChange={handleChange} placeholder="e.g. John Smith" />
+            <FE msg={errors.name} />
           </div>
+
           <div className="form-group">
-            <label className="form-label">Email</label>
-            <input type="email" className="form-control" name="email" value={formData.email} onChange={handleChange} required />
+            <label className="form-label">Email <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input type="email" className={`form-control${errors.email ? ' err' : ''}`}
+              name="email" value={formData.email} onChange={handleChange} placeholder="user@example.com" />
+            <FE msg={errors.email} />
           </div>
+
           <div className="form-group">
-            <label className="form-label">Username</label>
-            <input type="text" className="form-control" name="username" value={formData.username} onChange={handleChange} required />
+            <label className="form-label">Username <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input type="text" className={`form-control${errors.username ? ' err' : ''}`}
+              name="username" value={formData.username} onChange={handleChange} placeholder="min 3 chars, alphanumeric" />
+            <FE msg={errors.username} />
           </div>
+
           <div className="form-group">
-            <label className="form-label">Password</label>
-            <input type="password" className="form-control" name="password" value={formData.password} onChange={handleChange} required />
+            <label className="form-label">Password <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input type="password" className={`form-control${errors.password ? ' err' : ''}`}
+              name="password" value={formData.password} onChange={handleChange} placeholder="min 6 characters" />
+            <FE msg={errors.password} />
           </div>
+
           <div className="form-group">
             <label className="form-label">Role</label>
             <select className="form-control" name="role" value={formData.role} onChange={handleChange}>
@@ -90,8 +150,9 @@ const ManageUsers = ({ user }) => {
               <option value="DRIVER">DRIVER</option>
             </select>
           </div>
-          <button type="submit" className="btn mt-4" style={{width: '100%'}} disabled={loading}>
-            {loading ? 'Creating...' : 'Create User'}
+
+          <button type="submit" className="btn mt-4" style={{ width: '100%' }} disabled={loading}>
+            {loading ? '⏳ Creating…' : 'Create User'}
           </button>
         </form>
       </div>
@@ -104,14 +165,18 @@ const ManageUsers = ({ user }) => {
               <tr>
                 <th>Name</th>
                 <th>Username</th>
+                <th>Email</th>
                 <th>Role</th>
               </tr>
             </thead>
             <tbody>
-              {users.map(u => (
+              {users.length === 0
+                ? <tr><td colSpan="4" className="text-center">No users found.</td></tr>
+                : users.map(u => (
                 <tr key={u.id}>
                   <td>{u.name}</td>
                   <td>{u.username}</td>
+                  <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{u.email}</td>
                   <td><span className="badge badge-secondary">{u.role}</span></td>
                 </tr>
               ))}

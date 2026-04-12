@@ -4,10 +4,15 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>coldchain-frontend</title>
+    <title>ColdChain Sync</title>
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+        document.body.innerHTML += '<div style="color:red; background:white; position:absolute; top:0; left:0; width:100%; height:100%; padding:20px; z-index:9999;"><h1>Error</h1><pre>' + (error ? error.stack : message) + '</pre></div>';
+      };
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

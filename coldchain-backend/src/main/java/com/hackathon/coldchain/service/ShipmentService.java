@@ -36,6 +36,11 @@ public class ShipmentService {
     }
 
     public Shipment createShipment(Shipment shipment, Long creatorId) {
+        // Unique shipment number enforcement
+        if (shipmentRepository.existsByShipmentNumber(shipment.getShipmentNumber())) {
+            throw new IllegalArgumentException("Shipment number '" + shipment.getShipmentNumber() + "' already exists. Please use a unique shipment number.");
+        }
+
         ProductTemperatureRule rule = ruleRepository.findByProductType(shipment.getProductType())
                 .orElseThrow(() -> new RuntimeException("Rule not found for product type"));
                 
@@ -132,6 +137,32 @@ public class ShipmentService {
         return shipmentRepository.save(shipment);
     }
 
+    @Transactional(timeout = 15)
+    public Shipment cancelShipment(Long id) {
+        Shipment shipment = shipmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Shipment not found with ID: " + id));
+
+        ShipmentStatus current = shipment.getStatus();
+        if (current == ShipmentStatus.DELIVERED) {
+            throw new RuntimeException("Cannot cancel a DELIVERED shipment.");
+        }
+        if (current == ShipmentStatus.CANCELLED) {
+            throw new RuntimeException("Shipment is already CANCELLED.");
+        }
+
+        // Free the assigned asset — fetch by ID to avoid lazy-loading issues
+        if (shipment.getAssignedAsset() != null) {
+            Long assetId = shipment.getAssignedAsset().getId();
+            assetRepository.findById(assetId).ifPresent(asset -> {
+                asset.setStatus(AssetStatus.AVAILABLE);
+                assetRepository.save(asset);
+            });
+        }
+
+        shipment.setStatus(ShipmentStatus.CANCELLED);
+        return shipmentRepository.saveAndFlush(shipment);
+    }
+
     public void deleteShipment(Long id) {
         shipmentRepository.findById(id).ifPresent(shipment -> {
             // 1. Delete associated children to avoid foreign key constraints
@@ -161,5 +192,11 @@ public class ShipmentService {
     
     public Shipment getShipmentById(Long id) {
         return shipmentRepository.findById(id).orElse(null);
+    }
+
+    public List<Shipment> getDeliveredShipments() {
+        return shipmentRepository.findAll().stream()
+                .filter(s -> s.getStatus() == ShipmentStatus.DELIVERED)
+                .toList();
     }
 }

@@ -4,7 +4,7 @@
  * Fires a 'session-expired' event on 401 so App.jsx can auto-logout.
  */
 
-const BASE = 'http://localhost:8082';
+const BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082';
 
 export function getToken() {
   return localStorage.getItem('jwt_token');

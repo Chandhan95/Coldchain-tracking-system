@@ -80,7 +80,7 @@ const Login = ({ onLogin, sessionExpiredMsg }) => {
     setLoading(true);
     setErrors({});
     try {
-      const response = await fetch('http://localhost:8082/api/users/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082'}/api/users/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), password })
@@ -105,7 +105,7 @@ const Login = ({ onLogin, sessionExpiredMsg }) => {
     setErrors({});
     setSuccessMsg('');
     try {
-      const response = await fetch('http://localhost:8082/api/users', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082'}/api/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), email: email.trim(), username: username.trim(), password, role })
